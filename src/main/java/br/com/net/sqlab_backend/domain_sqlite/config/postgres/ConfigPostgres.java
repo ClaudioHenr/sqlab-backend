@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
@@ -18,47 +19,50 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import br.com.net.sqlab_backend.domain_sqlite.models.postgres.User;
 import jakarta.persistence.EntityManagerFactory;
 
 @Configuration
-@EnableTransactionManagement
+// @EnableTransactionManagement
 @EnableJpaRepositories(
-    entityManagerFactoryRef = "postgresEntityManagerFactory",
-    transactionManagerRef = "postgresTransactionManager",
-    basePackages = { "br.com.net.sqlab_backend.domain_sqlite.repositories.postgres" }
+    basePackageClasses = User.class,
+    entityManagerFactoryRef = "appEntityManagerFactory"
+    // transactionManagerRef = "postgresTransactionManager"
+    // basePackages = { "br.com.net.sqlab_backend.domain_sqlite.repositories.postgres" }
 )
 public class ConfigPostgres {
     
     @Primary
-    @Bean("postgresDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.postgres")
-    public DataSource dataSource() {
+    @Bean
+    @ConfigurationProperties(prefix = "app.datasource")
+    public DataSource authDataSource() {
         return DataSourceBuilder.create().build();
     }
 
     @Primary
-    @Bean(name = "postgresEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+    // @Bean(name = "postgresEntityManagerFactory")
+    @Bean
+    public LocalContainerEntityManagerFactoryBean appEntityManagerFactory(
         EntityManagerFactoryBuilder builder,
-        @Qualifier("postgresDataSource") DataSource dataSource
+        @Qualifier("authDataSource") DataSource dataSource
     ) {
 
         Map<String, String> properties = new HashMap<>();
-        properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        // properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
 
-        properties.put("hibernate.transaction.jta.platform", "org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform");
+        // properties.put("hibernate.transaction.jta.platform", "org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform");
         
         return builder
             .dataSource(dataSource)
             .packages("br.com.net.sqlab_backend.domain_sqlite.models.postgres")
             .persistenceUnit("postgresPU")
-            .properties(properties)
+            // .properties(properties)
             .build();
     }
 
-    @Primary
-    @Bean(name = "postgresTransactionManager")
-    public PlatformTransactionManager transactionManager(@Qualifier("postgresEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-        return new JpaTransactionManager(entityManagerFactory);
-    }
+    // @Primary
+    // @Bean(name = "postgresTransactionManager")
+    // public PlatformTransactionManager transactionManager(@Qualifier("postgresEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+    //     return new JpaTransactionManager(entityManagerFactory);
+    // }
 }
