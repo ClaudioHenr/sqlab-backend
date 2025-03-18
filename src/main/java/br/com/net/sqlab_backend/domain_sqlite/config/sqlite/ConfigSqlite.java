@@ -12,61 +12,60 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
 import jakarta.persistence.EntityManagerFactory;
 
-// @Configuration
-// @EnableTransactionManagement
-// @EnableJpaRepositories(
-//     entityManagerFactoryRef = "sqliteEntityManagerFactory",
-//     transactionManagerRef = "sqliteTransactionManager",
-//     basePackages = { "br.com.net.sqlab_backend.domain_sqlite.repositories.sqlite" }
-// )
+@Configuration
+@EnableTransactionManagement
+@EnableJpaRepositories(
+    basePackages = { "br.com.net.sqlab_backend.domain_sqlite.repositories.sqlite" },
+    entityManagerFactoryRef = "exerciseEntityManagerFactory",
+    transactionManagerRef = "exerciseTransactionManager"
+)
 public class ConfigSqlite {
 
-    // @Bean(name = "sqliteDataSource")
-    // @ConfigurationProperties(prefix = "spring.datasource.sqlite")
-    // public DataSource dataSource() {
-    //     return DataSourceBuilder.create()
-    //     .url("jdbc:sqlite:./database/my_db_tests.sqlite")
-    //     .driverClassName("org.sqlite.JDBC")
-    //     .build();
+    @Bean
+    @ConfigurationProperties(prefix = "exercise.datasource")
+    public DataSource exerciseDataSource() {
+        return DataSourceBuilder.create()
+        .url("jdbc:sqlite:./database/my_db_tests.sqlite")  // pode ser trocado para .db
+        .driverClassName("org.sqlite.JDBC")
+        .build();
+    }
 
-    //     // HikariConfig config = new HikariConfig();
-    //     // config.setJdbcUrl("jdbc:sqlite:./database/my_db_tests.sqlite");
-    //     // config.setDriverClassName("org.sqlite.JDBC");
-    //     // return new HikariDataSource(config);
-    // }
+    @Bean
+    public JdbcTemplate exerciseJdbcTemplate(@Qualifier("exerciseDataSource") DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
 
-    // @Bean("sqliteEntityManagerFactory")
-    // public LocalContainerEntityManagerFactoryBean entityManagerFactory(
-    //     EntityManagerFactoryBuilder builder, 
-    //     @Qualifier("sqliteDataSource") DataSource dataSource
-    // ) {
-        
-    //     Map<String, String> properties = new HashMap<>();
-    //     properties.put("hibernate.dialect", "org.hibernate.community.dialect.SQLiteDialect");
+    @Bean
+    public LocalContainerEntityManagerFactoryBean exerciseEntityManagerFactory(
+        EntityManagerFactoryBuilder builder, 
+        @Qualifier("exerciseDataSource") DataSource dataSource
+    ) {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("hibernate.hbm2ddl.auto", "create-drop");
+        properties.put("hibernate.dialect", "org.hibernate.community.dialect.SQLiteDialect");
+        properties.put("hibernate.show_sql", "true"); // Exibe SQL no console
+        properties.put("hibernate.format_sql", "true"); // Formatar sql no console
+        // properties.put("hibernate.transaction.jta.platform", "org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform");
 
-    //     properties.put("hibernate.transaction.jta.platform", "org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform");
+        return builder
+            .dataSource(dataSource)
+            .packages("br.com.net.sqlab_backend.domain_sqlite.models.sqlite")
+            .persistenceUnit("sqlitePU")
+            .properties(properties)
+            .build();
+    }
 
-    //     return builder
-    //         .dataSource(dataSource)
-    //         .packages("br.com.net.sqlab_backend.domain_sqlite.models.sqlite")
-    //         .persistenceUnit("sqlitePU")
-    //         .properties(properties)
-    //         .build();
-    // }
-
-    // @Bean(name = "sqliteTransactionManager")
-    // public PlatformTransactionManager transactionManager(@Qualifier("sqliteEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-    //     return new JpaTransactionManager(entityManagerFactory);
-    // }
+    @Bean
+    public PlatformTransactionManager exerciseTransactionManager(@Qualifier("exerciseEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
+    }
 
 }

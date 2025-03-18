@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Data
-@Table(name = "tests")
+@Table
 @Entity
 public class TestSqLite {
 

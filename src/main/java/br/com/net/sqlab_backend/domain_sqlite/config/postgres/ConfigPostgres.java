@@ -19,16 +19,14 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import br.com.net.sqlab_backend.domain_sqlite.models.postgres.User;
 import jakarta.persistence.EntityManagerFactory;
 
 @Configuration
-// @EnableTransactionManagement
+@EnableTransactionManagement
 @EnableJpaRepositories(
-    basePackageClasses = User.class,
-    entityManagerFactoryRef = "appEntityManagerFactory"
-    // transactionManagerRef = "postgresTransactionManager"
-    // basePackages = { "br.com.net.sqlab_backend.domain_sqlite.repositories.postgres" }
+    basePackages = { "br.com.net.sqlab_backend.domain_sqlite.repositories.postgres" },  // DEFINE OS REPOSITORIOS UTILIZADOS
+    entityManagerFactoryRef = "appEntityManagerFactory",
+    transactionManagerRef = "appTransactionManager"
 )
 public class ConfigPostgres {
     
@@ -36,33 +34,36 @@ public class ConfigPostgres {
     @Bean
     @ConfigurationProperties(prefix = "app.datasource")
     public DataSource authDataSource() {
-        return DataSourceBuilder.create().build();
+        return DataSourceBuilder.create()
+            .url("jdbc:postgresql://localhost:5432/db-sqlab")
+            .driverClassName("org.postgresql.Driver")
+            .build();
     }
 
     @Primary
-    // @Bean(name = "postgresEntityManagerFactory")
     @Bean
     public LocalContainerEntityManagerFactoryBean appEntityManagerFactory(
         EntityManagerFactoryBuilder builder,
         @Qualifier("authDataSource") DataSource dataSource
     ) {
-
         Map<String, String> properties = new HashMap<>();
-        // properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-
+        properties.put("hibernate.hbm2ddl.auto", "create-drop");
+        properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        properties.put("hibernate.show_sql", "true"); // Exibe SQL no console
+        properties.put("hibernate.format_sql", "true"); // Formatar sql no console
         // properties.put("hibernate.transaction.jta.platform", "org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform");
         
         return builder
             .dataSource(dataSource)
-            .packages("br.com.net.sqlab_backend.domain_sqlite.models.postgres")
+            .packages("br.com.net.sqlab_backend.domain_sqlite.models.postgres")  // DEFINE AS ENTIDADES USADAS PARA CRIAR AS TABELAS
             .persistenceUnit("postgresPU")
-            // .properties(properties)
+            .properties(properties)
             .build();
     }
 
-    // @Primary
-    // @Bean(name = "postgresTransactionManager")
-    // public PlatformTransactionManager transactionManager(@Qualifier("postgresEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-    //     return new JpaTransactionManager(entityManagerFactory);
-    // }
+    @Primary
+    @Bean
+    public PlatformTransactionManager appTransactionManager(@Qualifier("appEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
+    }
 }
